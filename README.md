@@ -4,6 +4,7 @@ webpy-ext
 Some extention for webpy
 
 * Store session in memcache
+* Store session in GAE
 
 you can put it in web/contrib
 
