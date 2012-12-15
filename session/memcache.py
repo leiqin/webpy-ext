@@ -19,23 +19,23 @@ class MemcacheStore(web.session.Store):
         self.timeout = timeout
 
     def __contains__(self, key):
-        key = _prepare_key(key)
-        return mc.append(key, '')
+        key = self._prepare_key(key)
+        return self.mc.append(key, '')
 
     def __getitem__(self, key):
-        key = _prepare_key(key)
-        return mc.get(key)
+        key = self._prepare_key(key)
+        return self.mc.get(key)
 
     def __setitem__(self, key, value):
-        key = _prepare_key(key)
-        mc.set(key, value, self.timeout)
+        key = self._prepare_key(key)
+        self.mc.set(key, value, self.timeout)
 
     def __delitem__(self, key):
-        key = _prepare_key(key)
-        mc.delete(key)
+        key = self._prepare_key(key)
+        self.mc.delete(key)
     
     def cleanup(self, timeout):
         pass
 
-    def _prepare_key(key):
+    def _prepare_key(self, key):
         return self.prefix + key
