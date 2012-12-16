@@ -10,6 +10,7 @@ import web.session
 from google.appengine.ext import db
 
 class Session(db.Model):
+    session_id = db.StringProperty()
     data = db.TextProperty()
     atime = db.DateTimeProperty()
 
@@ -19,35 +20,44 @@ class DataStore(web.session.Store):
     '''
 
     def __init__(self, ancestor_key='session'):
-        self.ancestor_key = ancestor_key
-        key = db.Key.from_path('Session', self.ancestor_key)
+        key = db.Key.from_path('Session', ancestor_key)
         self.ancestor = db.get(key)
         if not self.ancestor:
-            self.ancestor = Session(key_name=self.ancestor_key)
+            self.ancestor = Session(key_name=ancestor_key)
             self.ancestor.put()
 
     def __contains__(self, key):
         q = Session.all(keys_only=True)
         q.ancestor(self.ancestor)
-        key = db.Key.from_path('Session', self.ancestor_key, 'Session', key)
-        q.filter('__key__ =', key)
+        q.filter('session_id =', key)
         return q.get() != None
 
     def __getitem__(self, key):
-        key = db.Key.from_path('Session', self.ancestor_key, 'Session', key)
-        s = db.get(key)
+        q = Session.all()
+        q.ancestor(self.ancestor)
+        q.filter('session_id =', key)
+        s = q.get()
         s.atime = datetime.datetime.now()
         s.put()
         return self.decode(s.data)
 
     def __setitem__(self, key, value):
-        s = Session(parent=self.ancestor, key_name=key)
+        q = Session.all()
+        q.ancestor(self.ancestor)
+        q.filter('session_id =', key)
+        s = q.get()
+        if not s:
+            s = Session(parent=self.ancestor)
+            s.session_id = key
         s.data = self.encode(value)
         s.atime = datetime.datetime.now()
         s.put()
 
     def __delitem__(self, key):
-        key = db.Key.from_path('Session', self.ancestor_key, 'Session', key)
+        q = Session.all(keys_only=True)
+        q.ancestor(self.ancestor)
+        q.filter('session_id =', key)
+        key = q.get()
         db.delete(key)
     
     def cleanup(self, timeout):
